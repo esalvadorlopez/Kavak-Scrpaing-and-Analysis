@@ -7,6 +7,10 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 import re
 import json
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 #Creating URL's
 URL = 'https://www.kavak.com'
@@ -36,7 +40,7 @@ for i in range(0,_get_number_of_pages()):
         urls_to_scrap.append(final_url)
 
 
-#Maon variables for dataframe
+#Main variables for dataframe
 car_uris = []
 car_titles = []
 car_kms = []
@@ -44,6 +48,7 @@ car_prices = []
 car_final_urls = []
 car_main_features = []
 car_photos = []
+car_locations = []
 
 
 #This function get the urls for each car in the result main page
@@ -69,6 +74,7 @@ def _scrap_cars():
     counter_cars = 0
     for uri in car_uris:
         try:
+            #URL by car
             response_car = requests.get(f'{URL}{uri}',timeout=1000)
             car_deatil_page = bs4.BeautifulSoup(response_car.text,'html.parser')
 
@@ -108,6 +114,20 @@ def _scrap_cars():
             car_main_features.append(car_features_dict)
             car_final_urls.append(f'{URL}{uri}')
 
+            #Location
+            try:
+                driver = webdriver.Chrome(executable_path='C:\\Users\Erik López\\Downloads\\chromedriver_win32\\chromedriver.exe')
+                driver.get(f'{URL}{uri}')
+                location_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "a.feature-value")))
+                car_locations.append(location_element.text)
+                driver.quit()
+            except Exception as e:
+                print('Error in car location')
+                print(e)
+                car_locations.append('none')
+                pass
+
             print(f'Scrapping car {counter_cars}')
             counter_cars += 1
         except Exception as e:
@@ -124,6 +144,7 @@ def _create_dataframe():
             'km' : car_kms,
             'price' : car_prices,
             'features' : car_main_features,
+            'car_location': car_locations,
             'url' : car_final_urls,
             'image_link' : car_photos
         }
@@ -137,6 +158,7 @@ def _create_dataframe():
         print(len(car_prices))
         print(len(car_titles))
         print(len(car_kms))
+        print(len(car_locations))
         pass
 
 
